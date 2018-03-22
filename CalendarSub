@@ -1,0 +1,118 @@
+Private Sub CommandButton1_Click()
+Application.ScreenUpdating = False
+
+Dim count As Integer, sDay As Integer
+
+sDay = Range("A1:DP1").count
+
+
+
+Dim Months(0 To 11) As String
+
+Dim Sheet4 As Worksheet
+Set Sheet4 = Sheets("Sheet4")
+
+For i = 0 To 11
+
+    Months(i) = Sheet4.Cells(1, (i + 2)).Value
+Next i
+
+Dim MonthRange(1 To 12) As Integer
+
+Dim Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec As Range
+
+Set Jan = Sheet4.Range("B2:B32")
+Set Feb = Sheet4.Range("C2:C29")
+Set Mar = Sheet4.Range("D2:D32")
+Set Apr = Sheet4.Range("E2:E31")
+Set May = Sheet4.Range("F2:F32")
+Set Jun = Sheet4.Range("G2:G31")
+Set Jul = Sheet4.Range("H2:H32")
+Set Aug = Sheet4.Range("I2:I32")
+Set Sep = Sheet4.Range("J2:J31")
+Set Oct = Sheet4.Range("K2:K32")
+Set Nov = Sheet4.Range("L2:L31")
+Set Dec = Sheet4.Range("L2:L32")
+
+MonthCount = Array(Jan.count, Feb.count, Mar.count, Apr.count, May.count, Jun.count, Jul.count, Aug.count, Sep.count, Oct.count, Nov.count, Dec.count)
+
+Dim x As Integer, y As Integer, yy As Integer
+
+Dim Z As Range, dayCounter As Integer, ddCounter As Integer, twCounter As Integer
+
+ddDay = Array("S", "M", "T", "W", "T", "F", "S")
+
+x = 1
+y = 1
+count = 0
+dayCounter = 1
+ddCounter = 1
+twCounter = 15
+
+For i = 0 To 11
+    
+    yy = count + MonthCount(i)
+    
+    Set Z = Sheets("Sheet1").Range(Cells(x, y), Cells(x, yy))
+    
+    With Z
+        .Merge
+        .Value = Months(i)
+        .HorizontalAlignment = xlCenter
+        .Borders.LineStyle = xlGray75
+    End With
+    
+    For g = y To yy
+        Cells((x + 3), g).Value = dayCounter
+        With Cells((x + 3), g)
+            .ColumnWidth = 3
+            .HorizontalAlignment = xlCenter
+            .Borders.LineStyle = xlGray75
+        End With
+        
+        If ddCounter = 7 Then
+            
+            With Range(Cells((x + 1), (g - 6)), Cells((x + 1), (g)))
+                .Merge
+                .HorizontalAlignment = xlCenter
+                .Borders.LineStyle = xlGray75
+            End With
+            If twCounter = 53 Then
+                twCounter = 1
+            End If
+            Range(Cells((x + 1), (g - 6)), Cells((x + 1), (g))).Value = ("TW " + Str(twCounter))
+            twCounter = twCounter + 1
+        End If
+        
+        If ddCounter <= 6 Then
+            Cells((x + 2), g).Value = ddDay(ddCounter)
+        Else
+            ddCounter = 0
+            Cells((x + 2), g).Value = ddDay(ddCounter)
+        End If
+        
+        With Cells((x + 2), g)
+            .HorizontalAlignment = xlCenter
+            .Borders.LineStyle = xlGray75
+        End With
+        
+        
+        
+        ddCounter = ddCounter + 1
+        dayCounter = dayCounter + 1
+        
+    Next g
+    
+    count = count + MonthCount(i)
+    y = (1 + yy)
+    dayCounter = 1
+        
+Next i
+
+
+Application.ScreenUpdating = True
+
+
+
+
+End Sub
