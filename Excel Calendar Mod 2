@@ -1,0 +1,16 @@
+Sub yearTest()
+Dim x, y, NumYears, StartYear As Integer
+Dim Years As New Collection
+x = 2020
+y = 4
+NumYears = 3
+StartYear = 2022
+MsgBox (x Mod y)
+
+For i = 0 To NumYears - 1
+    Years.Add ((StartYear + i))
+Next i
+
+MsgBox Years(3)
+
+End Sub
