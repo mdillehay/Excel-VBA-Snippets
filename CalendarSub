@@ -1,12 +1,18 @@
 Global startMonth As Integer
-Global numYears As Integer
+Global NumYears, StartYear As Integer
+Global monthListCount As New Collection
 Global monthList As New Collection
+Global ParOrg, SubUnit1, SubUnit2, SubUnit3, SubUnit4, SubUnit5, SubUnit6 As String
+Global ParOrgCt, SubUnit1Ct, SubUnit2Ct, SubUnit3Ct, SubUnit4Ct, SubUnit5Ct, SubUnit6Ct As Integer
+
 
 
 
 Sub Button1_Click()
 
     Test
+    
+    CreateUnit
 
 Application.ScreenUpdating = False
 
@@ -14,26 +20,29 @@ Dim count As Integer, sDay As Integer
 
 sDay = Range("A1:DP1").count
 
-
-
-
-
-Dim Months(0 To 11) As String
-
-Dim Sheet4 As Worksheet
-Set Sheet4 = Sheets("Sheet4")
-
-For i = 0 To 11
-
-    Months(i) = Sheet4.Cells(1, (i + 2)).Value
+Dim Years As New Collection
+For i = 0 To NumYears - 1
+    Years.Add ((StartYear + i))
 Next i
+
+
+
+
+
+'For i = 0 To 11
+
+'    Months(i) = Sheet4.Cells(1, (i + 2)).Value
+'Next i
 
 Dim MonthRange(1 To 12) As Integer
 
 Dim Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec As Range
 
+'Sets a Range as the number of days in each respective month in order to generate MonthCount array
+'for Calendar build
+
 Set Jan = Sheet1.Range("B2:B32")
-Set Feb = Sheet1.Range("C2:C29")
+'Set Feb = Sheet1.Range("C2:C29")
 Set Mar = Sheet1.Range("D2:D32")
 Set Apr = Sheet1.Range("E2:E31")
 Set May = Sheet1.Range("F2:F32")
@@ -45,34 +54,66 @@ Set Oct = Sheet1.Range("K2:K32")
 Set Nov = Sheet1.Range("L2:L31")
 Set Dec = Sheet1.Range("L2:L32")
 
-MonthCount = Array(Oct.count, Nov.count, Dec.count, Jan.count, Feb.count, Mar.count, Apr.count, May.count, Jun.count, Jul.count, Aug.count, Sep.count)
+Months = Array("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+Dim locMonCounter, loc_i, iterMon As Integer
+loc_i = 0
+iterMon = startMonth
+
+For i = 1 To NumYears
+    If Years(i) Mod 4 = 0 Then
+        Set Feb = Sheet1.Range("C2:C30")
+    Else
+        Set Feb = Sheet1.Range("C2:C29")
+    End If
+
+    MonthCount = Array(Jan.count, Feb.count, Mar.count, Apr.count, May.count, Jun.count, Jul.count, Aug.count, Sep.count, Oct.count, Nov.count, Dec.count)
+
+    locMonCounter = 11
+    
+    While loc_i <= locMonCounter
+        If iterMon > 12 Then
+            iterMon = 1
+        End If
+        monthListCount.Add (MonthCount(iterMon - 1))
+        monthList.Add (Months(iterMon - 1))
+        iterMon = iterMon + 1
+        loc_i = loc_i + 1
+    Wend
+Next i
+
+
 
 Dim x As Integer, y As Integer, yy As Integer
 
 Dim Z As Range, dayCounter As Integer, ddCounter As Integer, twCounter As Integer, shortDayCounter As Integer
 
-ddDay = Array("S", "M", "T", "W", "T", "F", "S")
+ddDay = Array("S", "M", "T", "W", "T", "F", "S") 'Array of Weekdays to build calendar
 
-x = 1
-y = 1
-count = 0
-dayCounter = 1
-ddCounter = 6
-twCounter = 1
-shortDayCounter = 0
+x = 1  'establishes starting Cell for Calendar
+y = 2  'establishes starting Cell for Calendar
+count = 1   'used to merge the right numbers of day per month
+dayCounter = 1  'used to keep track of number a days generated in the year
+ddCounter = DayFinder((StartYear - 1), startMonth, 1)  'used to keep track of day of the week
+twCounter = 1  'used to generate proper Training Week number
+shortDayCounter = 0  'used to mitigate issue with short week being the first week of calendar
 
-For i = 0 To 11
+
+'Start of calendar build, first level FOR loop builds the "Month" line
+
+For i = 0 To Int(locMonCounter)
     
-    yy = count + MonthCount(i)
-    
+    yy = count + Int(monthListCount(i + 1))  'yy is used for ending Cell of Month
+    'MsgBox (monthListCount(i + 1))
     Set Z = Sheets("Sheet1").Range(Cells(x, y), Cells(x, yy))
     
     With Z
         .Merge
-        .Value = Months(i)
+        .Value = monthList(i + 1)
         .HorizontalAlignment = xlCenter
         .Borders.LineStyle = xlGray75
     End With
+    
+    'Second level FOR loop build "Training Week" line and "Days of Week" line
     
     For g = y To yy
         Cells((x + 3), g).Value = dayCounter
@@ -82,9 +123,9 @@ For i = 0 To 11
             .Borders.LineStyle = xlGray75
         End With
         
-        If ddCounter = 7 Then
+        If ddCounter = 6 Then 'IF block used to mitigate issue with first "Training Week" having less than 7 days
             
-            If g < 7 Then
+            If g < 7 And shortDayCounter <= 3 Then
                 With Range(Cells((x + 1), (g - shortDayCounter)), Cells((x + 1), (g)))
                     .Merge
                     .HorizontalAlignment = xlCenter
@@ -93,8 +134,20 @@ For i = 0 To 11
                 If twCounter = 53 Then
                     twCounter = 1
                 End If
-                Range(Cells((x + 1), (g - shortDayCounter)), Cells((x + 1), (g))).Value = ("TW " + Str(twCounter))
+                'Range(Cells((x + 1), (g - shortDayCounter)), Cells((x + 1), (g + 7))).Value = ("TW " + Str(twCounter))
+                'twCounter = twCounter + 1
+            ElseIf g < 7 Then
+                With Range(Cells((x + 1), (g - shortDayCounter)), Cells((x + 1), (g)))
+                    .Merge
+                    .HorizontalAlignment = xlCenter
+                    .Borders.LineStyle = xlGray75
+                End With
+                If twCounter = 53 Then
+                    twCounter = 1
+                End If
+                Range(Cells((x + 1), (g - shortDayCounter)), Cells((x + 1), (g + 7))).Value = ("TW " + Str(twCounter))
                 twCounter = twCounter + 1
+                
             Else
                 With Range(Cells((x + 1), (g - 6)), Cells((x + 1), (g)))
                     .Merge
@@ -131,13 +184,17 @@ For i = 0 To 11
         
     Next g
     
-    count = count + MonthCount(i)
+    count = count + monthListCount(i + 1)
     y = (1 + yy)
     dayCounter = 1
     
         
 Next i
 
+With Cells(1, 1)
+    .ColumnWidth = 30
+    .HorizontalAlignment = xlCenter
+End With
 
 Application.ScreenUpdating = True
 
@@ -157,25 +214,105 @@ Dim loc_i As Integer, iterMon As Integer
 Form1.Show
 
 
-locNumYear = numYears
+'locNumYear = numYears
 
-iterMonArr = Array("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-counter = (locNumYear * 12)
-loc_i = 1
-iterMon = startMonth
+'iterMonArr = Array("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+'counter = (locNumYear * 12)
+'loc_i = 1
+'iterMon = startMonth
 
 
 
-While loc_i <= counter
-    If iterMon > 12 Then
-        iterMon = 1
-    End If
-    monthList.Add (iterMonArr(iterMon - 1))
-    iterMon = iterMon + 1
-    loc_i = loc_i + 1
-Wend
+'While loc_i <= counter
+'    If iterMon > 12 Then
+'       iterMon = 1
+'    End If
+'    monthList.Add (iterMonArr(iterMon - 1))
+'    iterMon = iterMon + 1
+'    loc_i = loc_i + 1
+'Wend
     
 'MsgBox (monthList(1))
 
 Application.ScreenUpdating = True
+End Sub
+
+
+Sub CreateUnit()
+
+Form2.Show
+
+Application.ScreenUpdating = False
+
+Dim x, i As Integer
+'ParOrgCt, SubUnit1Ct, SubUnit2Ct, SubUnit3Ct, SubUnit4Ct, SubUnit5Ct, SubUnit6Ct
+Dim ParOrgRange As ListObject, xBeginStore As Range, xEndStore As Range, UnitNameStore As Range
+
+i = 0
+x = 5
+UnitCounts = Array(ParOrgCt, SubUnit1Ct, SubUnit2Ct, SubUnit3Ct, SubUnit4Ct, SubUnit5Ct, SubUnit6Ct)
+UnitNames = Array(ParOrg, SubUnit1, SubUnit2, SubUnit3, SubUnit4, SubUnit5, SubUnit6)
+BeginRange = Array("F10", "F11", "F12", "F13", "F14", "F15", "F16")
+EndRange = Array("G10", "G11", "G12", "G13", "G14", "G15", "G16")
+UnitNameRange = Array("H10", "H11", "H12", "H13", "H14", "H15", "H16")
+
+
+While i <= 6
+
+    With Range(Cells(x, 1), Cells((x + UnitCounts(i)), 1))
+        .Merge
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .Borders.LineStyle = xlGray75
+    End With
+    
+    Range(Cells(x, 1), Cells((x + UnitCounts(i)), 1)).Value = UnitNames(i)
+    Set xBeginStore = Sheets("Sheet4").Range(BeginRange(i))
+    xBeginStore.Value = x
+    Set xEndStore = Sheets("Sheet4").Range(EndRange(i))
+    xEndStore.Value = (x + UnitCounts(i))
+    Set UnitNameStore = Sheets("Sheet4").Range(UnitNameRange(i))
+    UnitNameStore = UnitNames(i)
+    
+    
+    x = x + 1 + UnitCounts(i)
+    i = i + 1
+Wend
+
+Form2.Hide
+Application.ScreenUpdating = True
+
+End Sub
+
+
+Sub EventInput()
+
+Dim rng As Range, cell As Range, temprng As Range
+Dim testName As String, x As Integer, x2 As Integer
+
+
+testName = "BN 5"
+
+Set rng = Sheets("Sheet4").Range("H10:H16")
+For Each cell In rng
+    If cell.Value = testName Then
+        Set temprng = Sheets("Sheet4").Cells(cell.Row, (cell.Column - 2))
+        x = temprng.Value
+        Set temprng = Sheets("Sheet4").Cells(cell.Row, (cell.Column - 1))
+        x2 = temprng.Value
+    End If
+Next cell
+
+'Use the WorksheetFunction.CountA(Range(x,y)) = 0 method to check whether therre is already an event on the line in that Range.
+
+Worksheets("Sheet1").Activate
+
+If WorksheetFunction.CountA(Range(Cells(x, 30), Cells(x, 45))) = 0 Then
+    MsgBox "It works"
+Else
+    MsgBox "It doesn't work"
+End If
+
+
+
 End Sub
