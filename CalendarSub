@@ -110,7 +110,10 @@ For i = 0 To Int(locMonCounter)
         .Merge
         .Value = monthList(i + 1)
         .HorizontalAlignment = xlCenter
-        .Borders.LineStyle = xlGray75
+        .Borders(xlEdgeLeft).LineStyle = xlGray75
+        If (i + 1) Mod 2 = 0 Then
+            .Interior.ColorIndex = 8
+        End If
     End With
     
     'Second level FOR loop build "Training Week" line and "Days of Week" line
@@ -137,11 +140,22 @@ For i = 0 To Int(locMonCounter)
                 'Range(Cells((x + 1), (g - shortDayCounter)), Cells((x + 1), (g + 7))).Value = ("TW " + Str(twCounter))
                 'twCounter = twCounter + 1
             ElseIf g < 7 Then
-                With Range(Cells((x + 1), (g - shortDayCounter)), Cells((x + 1), (g)))
-                    .Merge
-                    .HorizontalAlignment = xlCenter
-                    .Borders.LineStyle = xlGray75
-                End With
+                If twCounter Mod 2 = 0 Then
+            
+                    With Range(Cells((x + 1), (g - shortDayCounter)), Cells((x + 1), (g)))
+                        .Merge
+                        .HorizontalAlignment = xlCenter
+                        .Borders.LineStyle = xlGray75
+                        .Interior.ColorIndex = 8
+                    End With
+                Else
+                    With Range(Cells((x + 1), (g - shortDayCounter)), Cells((x + 1), (g)))
+                        .Merge
+                        .HorizontalAlignment = xlCenter
+                        .Borders.LineStyle = xlGray75
+                    End With
+                End If
+                
                 If twCounter = 53 Then
                     twCounter = 1
                 End If
@@ -149,11 +163,21 @@ For i = 0 To Int(locMonCounter)
                 twCounter = twCounter + 1
                 
             Else
-                With Range(Cells((x + 1), (g - 6)), Cells((x + 1), (g)))
-                    .Merge
-                    .HorizontalAlignment = xlCenter
-                    .Borders.LineStyle = xlGray75
-                End With
+                If twCounter Mod 2 = 0 Then
+                
+                    With Range(Cells((x + 1), (g - 6)), Cells((x + 1), (g)))
+                        .Merge
+                        .HorizontalAlignment = xlCenter
+                        .Borders.LineStyle = xlGray75
+                        .Interior.ColorIndex = 8
+                    End With
+                Else
+                    With Range(Cells((x + 1), (g - 6)), Cells((x + 1), (g)))
+                        .Merge
+                        .HorizontalAlignment = xlCenter
+                        .Borders.LineStyle = xlGray75
+                    End With
+                End If
             
                 If twCounter = 53 Then
                     twCounter = 1
@@ -170,11 +194,33 @@ For i = 0 To Int(locMonCounter)
             Cells((x + 2), g).Value = ddDay(ddCounter)
         End If
         
-        With Cells((x + 2), g)
-            .HorizontalAlignment = xlCenter
-            .Borders.LineStyle = xlGray75
-        End With
         
+        If ddCounter = 0 Or ddCounter = 6 Then
+            With Cells((x + 2), g)
+                .HorizontalAlignment = xlCenter
+                .Borders.LineStyle = xlGray75
+            End With
+            With Cells((x + 2), g).Interior
+                .Pattern = xlSolid
+                .PatternColorIndex = xlAutomatic
+                .ThemeColor = xlThemeColorDark1
+                .TintAndShade = -0.349986266670736
+                .PatternTintAndShade = 0
+            End With
+            With Cells((x + 3), g).Interior
+                .Pattern = xlSolid
+                .PatternColorIndex = xlAutomatic
+                .ThemeColor = xlThemeColorDark1
+                .TintAndShade = -0.349986266670736
+                .PatternTintAndShade = 0
+            End With
+            
+        Else
+            With Cells((x + 2), g)
+                .HorizontalAlignment = xlCenter
+                .Borders.LineStyle = xlGray75
+            End With
+        End If
         
         
         
@@ -286,10 +332,11 @@ End Sub
 
 
 Sub EventInput()
+Application.ScreenUpdating = False
+On Error GoTo ErrorHandler
 
 Dim rng As Range, cell As Range, temprng As Range
 Dim testName As String, x As Integer, x2 As Integer
-
 
 testName = "BN 5"
 
@@ -303,16 +350,49 @@ For Each cell In rng
     End If
 Next cell
 
+Set temprng = CheckOverlap(x, x2, 29, 34)
+
+
+
+With temprng
+    .Merge
+    .HorizontalAlignment = xlCenter
+    .VerticalAlignment = xlCenter
+    .Borders.LineStyle = xlGray75
+    
+End With
+temprng.Value = "This is also a test"
+
+
 'Use the WorksheetFunction.CountA(Range(x,y)) = 0 method to check whether therre is already an event on the line in that Range.
 
-Worksheets("Sheet1").Activate
+Exit Sub
+ErrorHandler:
 
-If WorksheetFunction.CountA(Range(Cells(x, 30), Cells(x, 45))) = 0 Then
-    MsgBox "It works"
-Else
-    MsgBox "It doesn't work"
-End If
-
-
-
+Application.ScreenUpdating = True
 End Sub
+
+
+Function CheckOverlap(x As Integer, x2 As Integer, y As Integer, y2 As Integer) As Range   'Function to check whether or not a NEW event will overlap with an already existing Event on the Calendar
+    Worksheets("Sheet1").Activate
+    Dim lclrng As Range
+    
+    Do While x <= x2
+    
+        Set lclrng = Range(Cells(x, y), Cells(x, y2))
+        If WorksheetFunction.CountA(lclrng) = 0 And lclrng.MergeCells = False Then
+            Set CheckOverlap = Range(Cells(x, y), Cells(x, y2))
+            Exit Do
+        Else
+            If x = x2 Then
+                MsgBox "You have scheduled too many events ... stop"
+                CheckOverlap = Null
+                Exit Do
+            End If
+        End If
+
+        x = x + 1
+    Loop
+    
+End Function
+'Function to check whether or not a NEW event will overlap with an already existing Event on the Calendar
