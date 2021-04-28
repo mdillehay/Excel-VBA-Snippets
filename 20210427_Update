@@ -1,0 +1,436 @@
+Public startMonth As Integer
+Global NumYears, StartYear As Integer
+Global monthListCount As New Collection
+Global monthList As New Collection
+Global FYQ As New Collection
+Global ParOrg, SubUnit1, SubUnit2, SubUnit3, SubUnit4, SubUnit5, SubUnit6 As String
+Global ParOrgCt, SubUnit1Ct, SubUnit2Ct, SubUnit3Ct, SubUnit4Ct, SubUnit5Ct, SubUnit6Ct As Integer
+
+
+
+
+Sub Button1_Click()
+
+    Test
+    
+    CreateUnit
+
+Application.ScreenUpdating = False
+
+Dim count As Integer, sDay As Integer
+
+sDay = Range("A1:DP1").count
+
+Dim Years As New Collection
+For i = 0 To NumYears - 1
+    Years.Add ((StartYear + i))
+Next i
+
+
+
+
+
+'For i = 0 To 11
+
+'    Months(i) = Sheet4.Cells(1, (i + 2)).Value
+'Next i
+
+Dim MonthRange(1 To 12) As Integer
+
+Dim Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec As Range
+
+'Sets a Range as the number of days in each respective month in order to generate MonthCount array
+'for Calendar build
+
+Set Jan = Sheet1.Range("B2:B32")
+'Set Feb = Sheet1.Range("C2:C29")
+Set Mar = Sheet1.Range("D2:D32")
+Set Apr = Sheet1.Range("E2:E31")
+Set May = Sheet1.Range("F2:F32")
+Set Jun = Sheet1.Range("G2:G31")
+Set Jul = Sheet1.Range("H2:H32")
+Set Aug = Sheet1.Range("I2:I32")
+Set Sep = Sheet1.Range("J2:J31")
+Set Oct = Sheet1.Range("K2:K32")
+Set Nov = Sheet1.Range("L2:L31")
+Set Dec = Sheet1.Range("L2:L32")
+
+Months = Array("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+Dim locMonCounter, loc_i, iterMon As Integer, LastTwo As String, YearStore As Range
+loc_i = 0
+iterMon = startMonth
+LastTwo = Right(Str(StartYear), 2)
+locMonCounter = 11
+
+For i = 1 To NumYears
+    If Years(i) Mod 4 = 0 Then
+        Set Feb = Sheet1.Range("C2:C30")
+    Else
+        Set Feb = Sheet1.Range("C2:C29")
+    End If
+    
+    
+    Set YearStore = ThisWorkbook.Worksheets("Sheet4").Cells(8, (10 + i))
+    YearStore.Value = Years(i)
+    
+
+    MonthCount = Array(Jan.count, Feb.count, Mar.count, Apr.count, May.count, Jun.count, Jul.count, Aug.count, Sep.count, Oct.count, Nov.count, Dec.count)
+    
+    
+    
+    While loc_i <= locMonCounter
+        If iterMon > 12 Then
+            iterMon = 1
+        End If
+        monthListCount.Add (MonthCount(iterMon - 1))
+        monthList.Add (Months(iterMon - 1))
+        iterMon = iterMon + 1
+        loc_i = loc_i + 1
+    Wend
+    
+    For h = 1 To 4
+        FYQ.Add ("FY" & LastTwo & " Q" & Str(h))
+    Next h
+    
+    LastTwo = Str(Int(LastTwo) + 1)
+    locMonCounter = locMonCounter + 12
+Next i
+
+
+locMonCounter = locMonCounter - 12
+Dim x As Integer, y As Integer, yy As Integer, FYy As Integer
+
+Dim Z As Range, dayCounter As Integer, ddCounter As Integer, twCounter As Integer, shortDayCounter As Integer
+
+ddDay = Array("S", "M", "T", "W", "T", "F", "S") 'Array of Weekdays to build calendar
+
+x = 1  'establishes starting Cell for Calendar
+y = 2  'establishes starting Cell for Calendar
+FYy = 2
+count = 1   'used to merge the right numbers of day per month
+dayCounter = 1  'used to keep track of number a days generated in the year
+ddCounter = DayFinder((StartYear - 1), startMonth, 1)  'used to keep track of day of the week
+twCounter = 1  'used to generate proper Training Week number
+shortDayCounter = 0  'used to mitigate issue with short week being the first week of calendar
+Dim FYQ_Counter As Integer, FYQ_Shade As Boolean
+FYQ_Shade = False
+FYQ_Counter = 0
+
+'Start of calendar build, first level FOR loop builds the "Month" line
+Worksheets("Sheet1").Activate
+
+For i = 0 To Int(locMonCounter)
+    
+    FYQ_Counter = FYQ_Counter + 1
+    yy = count + Int(monthListCount(i + 1))  'yy is used for ending Cell of Month
+    'MsgBox (monthListCount(i + 1))
+    Set Z = Sheets("Sheet1").Range(Cells(x + 1, y), Cells(x + 1, yy))
+    
+    With Z
+        .Merge
+        .Value = monthList(i + 1)
+        .HorizontalAlignment = xlCenter
+        .Borders(xlEdgeLeft).LineStyle = xlGray75
+        If (i + 1) Mod 2 = 0 Then
+            .Interior.ColorIndex = 8
+        End If
+    End With
+    
+    If FYQ_Counter = 3 Then
+        Set Z = Sheets("Sheet1").Range(Cells(x, FYy), Cells(x, yy))
+        With Z
+            .Merge
+            .Value = FYQ(((i + 1) / 3))
+            .HorizontalAlignment = xlCenter
+            .Borders.LineStyle = xlGray75
+            If FYQ_Shade = True Then
+                .Interior.ColorIndex = 8
+            End If
+        End With
+        FYQ_Counter = 0
+        FYy = yy + 1
+        FYQ_Shade = Not FYQ_Shade
+    End If
+    
+    
+    'Second level FOR loop build "Training Week" line and "Days of Week" line
+    
+    For g = y To yy
+        Cells((x + 4), g).Value = dayCounter
+        With Cells((x + 4), g)
+            .ColumnWidth = 3
+            .HorizontalAlignment = xlCenter
+            .Borders.LineStyle = xlGray75
+        End With
+        
+        If ddCounter = 6 Then 'IF block used to mitigate issue with first "Training Week" having less than 7 days
+            
+            If g < 7 And shortDayCounter <= 3 Then
+                With Range(Cells((x + 2), (g - shortDayCounter)), Cells((x + 2), (g)))
+                    .Merge
+                    .HorizontalAlignment = xlCenter
+                    .Borders.LineStyle = xlGray75
+                End With
+                If twCounter = 53 Then
+                    twCounter = 1
+                End If
+                'Range(Cells((x + 1), (g - shortDayCounter)), Cells((x + 1), (g + 7))).Value = ("TW " + Str(twCounter))
+                'twCounter = twCounter + 1
+            ElseIf g < 7 Then
+                If twCounter Mod 2 = 0 Then
+            
+                    With Range(Cells((x + 2), (g - shortDayCounter)), Cells((x + 2), (g)))
+                        .Merge
+                        .HorizontalAlignment = xlCenter
+                        .Borders.LineStyle = xlGray75
+                        .Interior.ColorIndex = 8
+                    End With
+                Else
+                    With Range(Cells((x + 2), (g - shortDayCounter)), Cells((x + 2), (g)))
+                        .Merge
+                        .HorizontalAlignment = xlCenter
+                        .Borders.LineStyle = xlGray75
+                    End With
+                End If
+                
+                If twCounter = 53 Then
+                    twCounter = 1
+                End If
+                Range(Cells((x + 2), (g - shortDayCounter)), Cells((x + 2), (g + 7))).Value = ("TW " + Str(twCounter))
+                twCounter = twCounter + 1
+                
+            Else
+                If twCounter Mod 2 = 0 Then
+                
+                    With Range(Cells((x + 2), (g - 6)), Cells((x + 2), (g)))
+                        .Merge
+                        .HorizontalAlignment = xlCenter
+                        .Borders.LineStyle = xlGray75
+                        .Interior.ColorIndex = 8
+                    End With
+                Else
+                    With Range(Cells((x + 2), (g - 6)), Cells((x + 2), (g)))
+                        .Merge
+                        .HorizontalAlignment = xlCenter
+                        .Borders.LineStyle = xlGray75
+                    End With
+                End If
+            
+                If twCounter = 53 Then
+                    twCounter = 1
+                End If
+                Range(Cells((x + 2), (g - 6)), Cells((x + 2), (g))).Value = ("TW " + Str(twCounter))
+                twCounter = twCounter + 1
+            End If
+        End If
+        
+        If ddCounter <= 6 Then
+            Cells((x + 3), g).Value = ddDay(ddCounter)
+        Else
+            ddCounter = 0
+            Cells((x + 3), g).Value = ddDay(ddCounter)
+        End If
+        
+        
+        If ddCounter = 0 Or ddCounter = 6 Then
+            With Cells((x + 3), g)
+                .HorizontalAlignment = xlCenter
+                .Borders.LineStyle = xlGray75
+            End With
+            With Cells((x + 3), g).Interior
+                .Pattern = xlSolid
+                .PatternColorIndex = xlAutomatic
+                .ThemeColor = xlThemeColorDark1
+                .TintAndShade = -0.349986266670736
+                .PatternTintAndShade = 0
+            End With
+            With Cells((x + 4), g).Interior
+                .Pattern = xlSolid
+                .PatternColorIndex = xlAutomatic
+                .ThemeColor = xlThemeColorDark1
+                .TintAndShade = -0.349986266670736
+                .PatternTintAndShade = 0
+            End With
+            
+        Else
+            With Cells((x + 3), g)
+                .HorizontalAlignment = xlCenter
+                .Borders.LineStyle = xlGray75
+            End With
+        End If
+        
+        
+        
+        ddCounter = ddCounter + 1
+        dayCounter = dayCounter + 1
+        shortDayCounter = shortDayCounter + 1
+        
+    Next g
+    
+    count = count + monthListCount(i + 1)
+    y = (1 + yy)
+    dayCounter = 1
+    
+        
+Next i
+
+With Cells(1, 1)
+    .ColumnWidth = 30
+    .HorizontalAlignment = xlCenter
+End With
+
+Application.ScreenUpdating = True
+
+
+
+
+End Sub
+
+
+Sub Test()
+
+Application.ScreenUpdating = False
+
+Dim locStartMonth As Integer, locNumYear As Integer, counter As Integer
+Dim loc_i As Integer, iterMon As Integer
+
+Form1.Show
+
+
+'locNumYear = numYears
+
+'iterMonArr = Array("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+'counter = (locNumYear * 12)
+'loc_i = 1
+'iterMon = startMonth
+
+
+
+'While loc_i <= counter
+'    If iterMon > 12 Then
+'       iterMon = 1
+'    End If
+'    monthList.Add (iterMonArr(iterMon - 1))
+'    iterMon = iterMon + 1
+'    loc_i = loc_i + 1
+'Wend
+    
+'MsgBox (monthList(1))
+
+Application.ScreenUpdating = True
+End Sub
+
+
+Sub CreateUnit()
+
+Form2.Show
+
+Application.ScreenUpdating = False
+
+Dim x, i As Integer
+'ParOrgCt, SubUnit1Ct, SubUnit2Ct, SubUnit3Ct, SubUnit4Ct, SubUnit5Ct, SubUnit6Ct
+Dim ParOrgRange As ListObject, xBeginStore As Range, xEndStore As Range, UnitNameStore As Range
+
+i = 0
+x = 6
+UnitCounts = Array(ParOrgCt, SubUnit1Ct, SubUnit2Ct, SubUnit3Ct, SubUnit4Ct, SubUnit5Ct, SubUnit6Ct)
+UnitNames = Array(ParOrg, SubUnit1, SubUnit2, SubUnit3, SubUnit4, SubUnit5, SubUnit6)
+BeginRange = Array("F10", "F11", "F12", "F13", "F14", "F15", "F16")
+EndRange = Array("G10", "G11", "G12", "G13", "G14", "G15", "G16")
+UnitNameRange = Array("H10", "H11", "H12", "H13", "H14", "H15", "H16")
+
+
+While i <= 6
+
+    With Range(Cells(x, 1), Cells((x + UnitCounts(i)), 1))
+        .Merge
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .Borders.LineStyle = xlGray75
+    End With
+    
+    Range(Cells(x, 1), Cells((x + UnitCounts(i)), 1)).Value = UnitNames(i)
+    Set xBeginStore = Sheets("Sheet4").Range(BeginRange(i))
+    xBeginStore.Value = x
+    Set xEndStore = Sheets("Sheet4").Range(EndRange(i))
+    xEndStore.Value = (x + UnitCounts(i))
+    Set UnitNameStore = Sheets("Sheet4").Range(UnitNameRange(i))
+    UnitNameStore = UnitNames(i)
+    
+    
+    x = x + 1 + UnitCounts(i)
+    i = i + 1
+Wend
+
+Form2.Hide
+Application.ScreenUpdating = True
+
+End Sub
+
+
+Sub EventInput()
+Application.ScreenUpdating = False
+On Error GoTo ErrorHandler
+
+Dim rng As Range, cell As Range, temprng As Range
+Dim testName As String, x As Integer, x2 As Integer
+
+testName = "BN 5"
+
+Set rng = Sheets("Sheet4").Range("H10:H16")
+For Each cell In rng
+    If cell.Value = testName Then
+        Set temprng = Sheets("Sheet4").Cells(cell.Row, (cell.Column - 2))
+        x = temprng.Value
+        Set temprng = Sheets("Sheet4").Cells(cell.Row, (cell.Column - 1))
+        x2 = temprng.Value
+    End If
+Next cell
+
+Set temprng = CheckOverlap(x, x2, 15, 29)
+
+
+
+With temprng
+    .Merge
+    .HorizontalAlignment = xlCenter
+    .VerticalAlignment = xlCenter
+    .Borders(xlEdgeBottom).LineStyle = xlGray75
+    
+End With
+temprng.Value = "This is also a test"
+
+
+'Use the WorksheetFunction.CountA(Range(x,y)) = 0 method to check whether therre is already an event on the line in that Range.
+
+Exit Sub
+ErrorHandler:
+
+Application.ScreenUpdating = True
+End Sub
+
+
+Function CheckOverlap(x As Integer, x2 As Integer, y As Integer, y2 As Integer) As Range   'Function to check whether or not a NEW event will overlap with an already existing Event on the Calendar
+    Worksheets("Sheet1").Activate
+    Dim lclrng As Range
+    
+    Do While x <= x2
+    
+        Set lclrng = Range(Cells(x, y), Cells(x, y2))
+        If WorksheetFunction.CountA(lclrng) = 0 And lclrng.MergeCells = False Then
+            Set CheckOverlap = Range(Cells(x, y), Cells(x, y2))
+            Exit Do
+        Else
+            If x = x2 Then
+                MsgBox "You have scheduled too many events ... stop"
+                CheckOverlap = Null
+                Exit Do
+            End If
+        End If
+
+        x = x + 1
+    Loop
+    
+End Function
+'Function to check whether or not a NEW event will overlap with an already existing Event on the Calendar
+
